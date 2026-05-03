@@ -278,9 +278,12 @@ auth.onAuthStateChanged(user=>{
 }
 
 // 🚀 INIT
-window.onload = () => {
+window.onload=()=>{
   render();
   escucharRanking();
+
+  // mostrar login al iniciar
+  mostrarPantalla("pantallaLogin");
 };
 
 // 🔁 LOGIN CONTROL
