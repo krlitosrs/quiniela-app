@@ -10,7 +10,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// 🔐 ADMIN
+// 🔐 ADMIN (solo visual por ahora)
 const ES_ADMIN = true;
 
 // ⚽ PARTIDOS
@@ -48,27 +48,54 @@ function render() {
   cont.innerHTML += `<div id="tabla_A"></div>`;
 }
 
-// 🔐 AUTH
+// 🔐 REGISTRO
 function registrar() {
   const email = document.getElementById("email").value;
   const pass = document.getElementById("password").value;
 
   auth.createUserWithEmailAndPassword(email, pass)
-    .then(() => alert("Registrado"))
+    .then(async (cred) => {
+
+      await db.collection("usuarios").doc(cred.user.uid).set({
+        email: email,
+        permitido: false
+      });
+
+      alert("Usuario creado. Espera autorización.");
+      auth.signOut();
+    })
     .catch(e => alert(e.message));
 }
 
+// 🔐 LOGIN
 function login() {
   const email = document.getElementById("email").value;
   const pass = document.getElementById("password").value;
 
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => alert("Bienvenido"))
     .catch(e => alert(e.message));
 }
 
 function logout() {
   auth.signOut();
+}
+
+// 🔒 CONTROL DE ACCESO
+async function verificarAcceso() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const doc = await db.collection("usuarios").doc(user.uid).get();
+
+  const permitido = doc.exists && doc.data().permitido === true;
+
+  if (!permitido) {
+    alert("No tienes acceso aún");
+    auth.signOut();
+    return;
+  }
+
+  verificarNickname();
 }
 
 // 🧠 VALIDAR NICKNAME
@@ -84,14 +111,12 @@ async function guardarNickname() {
   const nick = document.getElementById("nickname").value.trim();
 
   if (!validarNickname(nick)) {
-    alert("Nickname inválido (solo letras/números, máx 25)");
-    return;
+    return alert("Nickname inválido (solo letras/números, máx 25)");
   }
 
   await db.collection("usuarios").doc(user.uid).set({
-    email: user.email,
     nickname: nick
-  });
+  }, { merge: true });
 
   alert("Nickname guardado");
   verificarNickname();
@@ -106,20 +131,14 @@ async function verificarNickname() {
 
   const tieneNick = doc.exists && doc.data().nickname;
 
-  const app = document.getElementById("partidos");
-
-  app.style.display = tieneNick ? "block" : "none";
+  document.getElementById("partidos").style.display =
+    tieneNick ? "block" : "none";
 }
 
 // 💾 PREDICCIONES
 async function guardarPredicciones() {
   const user = auth.currentUser;
   if (!user) return alert("Inicia sesión");
-
-  const doc = await db.collection("usuarios").doc(user.uid).get();
-  if (!doc.exists || !doc.data().nickname) {
-    return alert("Debes crear nickname primero");
-  }
 
   let datos = {};
 
@@ -134,8 +153,8 @@ async function guardarPredicciones() {
   });
 
   await db.collection("predicciones").doc(user.uid).set({
-    user: user.email,
     uid: user.uid,
+    user: user.email,
     partidos: datos
   });
 
@@ -161,70 +180,7 @@ async function guardarResultados() {
   alert("Resultados guardados");
 }
 
-// 📊 TABLA
-function escucharResultados() {
-  db.collection("resultados").doc("grupoA")
-    .onSnapshot(doc => {
-      if (!doc.exists) return;
-      calcularTabla(doc.data());
-    });
-}
-
-function calcularTabla(resultados) {
-  let tabla = {};
-
-  partidos.forEach(p => {
-    const { local, visitante } = p;
-
-    if (!tabla[local]) tabla[local] = { pts: 0, gf: 0, gc: 0 };
-    if (!tabla[visitante]) tabla[visitante] = { pts: 0, gf: 0, gc: 0 };
-
-    const res = resultados[p.id];
-    if (!res) return;
-
-    const l = res.l;
-    const v = res.v;
-
-    tabla[local].gf += l;
-    tabla[local].gc += v;
-    tabla[visitante].gf += v;
-    tabla[visitante].gc += l;
-
-    if (l > v) tabla[local].pts += 3;
-    else if (l < v) tabla[visitante].pts += 3;
-    else {
-      tabla[local].pts += 1;
-      tabla[visitante].pts += 1;
-    }
-  });
-
-  let lista = Object.entries(tabla).map(([equipo, d]) => ({
-    equipo,
-    ...d,
-    dg: d.gf - d.gc
-  }));
-
-  lista.sort((a, b) =>
-    b.pts - a.pts || b.dg - a.dg || b.gf - a.gf
-  );
-
-  pintarTabla(lista);
-}
-
-function pintarTabla(lista) {
-  const cont = document.getElementById("tabla_A");
-
-  let html = "<table border='1' style='width:100%'>";
-  html += "<tr><th>#</th><th>Equipo</th><th>Pts</th></tr>";
-
-  lista.forEach((e, i) => {
-    html += `<tr><td>${i + 1}</td><td>${e.equipo}</td><td>${e.pts}</td></tr>`;
-  });
-
-  cont.innerHTML = html;
-}
-
-// 🏆 RANKING
+// 🧠 PUNTOS
 function calcularPuntos(pred, real) {
   let puntos = 0;
 
@@ -245,6 +201,7 @@ function calcularPuntos(pred, real) {
   return puntos;
 }
 
+// 🏆 RANKING
 function escucharRanking() {
   let resultados = null;
   let predicciones = [];
@@ -285,7 +242,7 @@ function escucharRanking() {
   }
 }
 
-// 🎨 RANKING + POSICIÓN
+// 🎨 RANKING
 function pintarRanking(lista) {
   const cont = document.getElementById("ranking");
   const user = auth.currentUser;
@@ -306,13 +263,13 @@ function pintarRanking(lista) {
     }
 
     if (i === 0) {
-      estilo += "background: gold; font-weight:bold;";
+      estilo += "background: gold;";
       pos = "🥇";
     } else if (i === 1) {
-      estilo += "background: silver; font-weight:bold;";
+      estilo += "background: silver;";
       pos = "🥈";
     } else if (i === 2) {
-      estilo += "background: #cd7f32; font-weight:bold;";
+      estilo += "background: #cd7f32;";
       pos = "🥉";
     }
 
@@ -326,7 +283,6 @@ function pintarRanking(lista) {
   });
 
   html += "</table>";
-
   cont.innerHTML = html;
 
   if (posicion) {
@@ -338,10 +294,10 @@ function pintarRanking(lista) {
 // 🚀 INIT
 window.onload = () => {
   render();
-  escucharResultados();
   escucharRanking();
 };
 
+// 🔁 LOGIN CONTROL
 auth.onAuthStateChanged(user => {
-  if (user) verificarNickname();
+  if (user) verificarAcceso();
 });
