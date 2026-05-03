@@ -1,4 +1,4 @@
-// 🔥 CONFIG FIREBASE
+// 🔥 CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCXwjx7-rkh7arUF2ma7rK_gE1luwSB6ic",
   authDomain: "quiniela-app-7cbb0.firebaseapp.com",
@@ -6,301 +6,263 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// 🔐 ADMIN (solo visual)
-const ES_ADMIN = true;
-
 // ⚽ PARTIDOS
 const partidos = [
-  { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
-  { id: 2, grupo: "A", local: "Brasil", visitante: "Argentina" },
-  { id: 3, grupo: "A", local: "Brasil", visitante: "Francia" },
-  { id: 4, grupo: "A", local: "Alemania", visitante: "Argentina" },
-  { id: 5, grupo: "A", local: "Alemania", visitante: "Francia" },
-  { id: 6, grupo: "A", local: "Argentina", visitante: "Francia" }
+  { id: 1, local: "Brasil", visitante: "Alemania" },
+  { id: 2, local: "Brasil", visitante: "Argentina" },
+  { id: 3, local: "Brasil", visitante: "Francia" },
+  { id: 4, local: "Alemania", visitante: "Argentina" },
+  { id: 5, local: "Alemania", visitante: "Francia" },
+  { id: 6, local: "Argentina", visitante: "Francia" }
 ];
 
-// 🎨 RENDER
-function render() {
-  const cont = document.getElementById("partidos");
-  cont.innerHTML = "<h3>Grupo A</h3>";
-
-  partidos.forEach(p => {
-    cont.innerHTML += `
-      <div>
-        ${p.local} vs ${p.visitante}
-        <input type="number" id="p_l_${p.id}" min="0" max="30">
-        -
-        <input type="number" id="p_v_${p.id}" min="0" max="30">
-
-        ${ES_ADMIN ? `
-        <input type="number" id="r_l_${p.id}" min="0" max="30" placeholder="R">
-        -
-        <input type="number" id="r_v_${p.id}" min="0" max="30" placeholder="R">
-        ` : ""}
-      </div>
-    `;
+// 🧭 PANTALLAS
+function mostrarPantalla(id) {
+  ["pantallaLogin","pantallaNickname","pantallaApp"].forEach(p=>{
+    document.getElementById(p).style.display = (p===id?"block":"none");
   });
-
-  cont.innerHTML += `<div id="tabla_A"></div>`;
 }
 
-// 🔐 REGISTRO
+function mostrarVista(vista) {
+  document.getElementById("vistaPredicciones").style.display = "none";
+  document.getElementById("vistaRanking").style.display = "none";
+  document.getElementById("vistaMisResultados").style.display = "none";
+
+  if (vista==="predicciones") document.getElementById("vistaPredicciones").style.display="block";
+  if (vista==="ranking") document.getElementById("vistaRanking").style.display="block";
+  if (vista==="misResultados") document.getElementById("vistaMisResultados").style.display="block";
+}
+
+// 🔐 AUTH
 function registrar() {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
+  const email = emailInput();
+  const pass = passInput();
 
   auth.createUserWithEmailAndPassword(email, pass)
-    .then(async (cred) => {
+    .then(async (cred)=>{
       await db.collection("usuarios").doc(cred.user.uid).set({
-        email: email,
-        permitido: false
+        email, permitido:false
       });
-
-      alert("Usuario creado. Espera autorización.");
+      alert("Creado, espera autorización");
       auth.signOut();
     })
-    .catch(e => alert(e.message));
+    .catch(e=>alert(e.message));
 }
 
-// 🔐 LOGIN
 function login() {
-  const email = document.getElementById("email").value;
-  const pass = document.getElementById("password").value;
-
-  auth.signInWithEmailAndPassword(email, pass)
-    .catch(e => alert(e.message));
+  auth.signInWithEmailAndPassword(emailInput(), passInput())
+    .catch(e=>alert(e.message));
 }
 
-function logout() {
-  auth.signOut();
-}
+function logout() { auth.signOut(); }
 
-// 🔒 CONTROL ACCESO
+function emailInput(){ return document.getElementById("email").value; }
+function passInput(){ return document.getElementById("password").value; }
+
+// 🔒 ACCESO
 async function verificarAcceso() {
   const user = auth.currentUser;
   if (!user) return;
 
   const doc = await db.collection("usuarios").doc(user.uid).get();
 
-  const permitido = doc.exists && doc.data().permitido === true;
-
-  if (!permitido) {
-    alert("No tienes acceso aún");
+  if (!doc.exists || doc.data().permitido !== true) {
+    alert("Sin acceso");
     auth.signOut();
     return;
   }
 
-  verificarNickname();
-}
-
-// 🧠 VALIDAR NICKNAME
-function validarNickname(nick) {
-  return /^[a-zA-Z0-9]{1,25}$/.test(nick);
+  if (!doc.data().nickname) {
+    mostrarPantalla("pantallaNickname");
+  } else {
+    mostrarPantalla("pantallaApp");
+  }
 }
 
 // 👤 NICKNAME
-async function guardarNickname() {
+function validarNickname(n){ return /^[a-zA-Z0-9]{1,25}$/.test(n); }
+
+async function guardarNickname(){
   const user = auth.currentUser;
-  if (!user) return alert("Debes iniciar sesión");
+  const nick = document.getElementById("nickname").value.trim().toLowerCase();
 
-  const nick = document.getElementById("nickname").value.trim();
+  if (!validarNickname(nick)) return alert("Nickname inválido");
 
-  if (!validarNickname(nick)) {
-    return alert("Nickname inválido");
-  }
+  const userRef = db.collection("usuarios").doc(user.uid);
+  const nickRef = db.collection("nicknames").doc(nick);
 
-  await db.collection("usuarios").doc(user.uid).set({
-    nickname: nick
-  }, { merge: true });
+  try {
+    await db.runTransaction(async tx=>{
+      const u = await tx.get(userRef);
+      if (u.exists && u.data().nickname) throw new Error("No editable");
 
-  alert("Nickname guardado");
-  verificarNickname();
+      const n = await tx.get(nickRef);
+      if (n.exists) throw new Error("Ya en uso");
+
+      tx.set(nickRef,{uid:user.uid});
+      tx.set(userRef,{nickname:nick},{merge:true});
+    });
+
+    mostrarPantalla("pantallaApp");
+
+  } catch(e){ alert(e.message); }
 }
 
-async function verificarNickname() {
-  const user = auth.currentUser;
-  if (!user) return;
+// 🎨 RENDER PARTIDOS
+function render(){
+  const c = document.getElementById("partidos");
+  c.innerHTML="";
 
-  const doc = await db.collection("usuarios").doc(user.uid).get();
-
-  const tieneNick = doc.exists && doc.data().nickname;
-
-  document.getElementById("partidos").style.display =
-    tieneNick ? "block" : "none";
+  partidos.forEach(p=>{
+    c.innerHTML += `
+      <div>
+        ${p.local} vs ${p.visitante}
+        <input id="p_l_${p.id}" type="number" min="0">
+        -
+        <input id="p_v_${p.id}" type="number" min="0">
+      </div>`;
+  });
 }
 
 // 💾 PREDICCIONES
-async function guardarPredicciones() {
+async function guardarPredicciones(){
   const user = auth.currentUser;
-  if (!user) return alert("Inicia sesión");
-
   let datos = {};
 
-  partidos.forEach(p => {
-    let l = parseInt(document.getElementById(`p_l_${p.id}`).value);
-    let v = parseInt(document.getElementById(`p_v_${p.id}`).value);
-
-    if (isNaN(l)) l = 0;
-    if (isNaN(v)) v = 0;
-
-    datos[p.id] = { l, v };
+  partidos.forEach(p=>{
+    let l=parseInt(document.getElementById(`p_l_${p.id}`).value)||0;
+    let v=parseInt(document.getElementById(`p_v_${p.id}`).value)||0;
+    datos[p.id]={l,v};
   });
 
   await db.collection("predicciones").doc(user.uid).set({
-    uid: user.uid,
-    user: user.email,
-    partidos: datos
+    uid:user.uid,
+    partidos:datos
   });
 
-  alert("Predicciones guardadas");
+  alert("Guardado");
 }
 
-// 🧾 RESULTADOS
-async function guardarResultados() {
-  if (!ES_ADMIN) return;
+// 🧠 PUNTOS
+function calcular(pred, real){
+  let puntos=0, exactos=0, resultados=0;
 
-  let datos = {};
+  Object.keys(real).forEach(id=>{
+    const pr=pred[id], re=real[id];
+    if(!pr) return;
 
-  for (let p of partidos) {
-    let l = parseInt(document.getElementById(`r_l_${p.id}`).value);
-    let v = parseInt(document.getElementById(`r_v_${p.id}`).value);
-
-    if (isNaN(l) || isNaN(v)) continue;
-
-    if (l < 0 || v < 0 || l > 30 || v > 30) {
-      alert("Resultados inválidos");
-      return;
+    if(pr.l===re.l && pr.v===re.v){
+      puntos+=5; exactos++; resultados++; return;
     }
 
-    datos[p.id] = { l, v };
-  }
-
-  await db.collection("resultados").doc("grupoA").set(datos);
-  alert("Resultados guardados");
-}
-
-// 🧠 ESTADÍSTICAS (puntos + desempate)
-function calcularEstadisticas(pred, real) {
-  let puntos = 0;
-  let exactos = 0;
-  let resultados = 0;
-
-  Object.keys(real).forEach(id => {
-    if (!pred[id]) return;
-
-    const pr = pred[id];
-    const re = real[id];
-
-    if (pr.l === re.l && pr.v === re.v) {
-      puntos += 5;
-      exactos++;
-      resultados++;
-      return;
-    }
-
-    if (
-      (pr.l > pr.v && re.l > re.v) ||
-      (pr.l < pr.v && re.l < re.v) ||
-      (pr.l === pr.v && re.l === re.v)
-    ) {
-      puntos += 3;
-      resultados++;
+    if(
+      (pr.l>pr.v && re.l>re.v) ||
+      (pr.l<pr.v && re.l<re.v) ||
+      (pr.l===pr.v && re.l===re.v)
+    ){
+      puntos+=3; resultados++;
     }
   });
 
-  return { puntos, exactos, resultados };
+  return {puntos,exactos,resultados};
 }
 
 // 🏆 RANKING
-function escucharRanking() {
-  let resultados = null;
-  let predicciones = [];
-  let usuarios = {};
+function escucharRanking(){
+  let resultados=null, pred=[], users={};
 
-  db.collection("resultados").doc("grupoA")
-    .onSnapshot(doc => {
-      if (!doc.exists) return;
-      resultados = doc.data();
-      actualizar();
-    });
+  db.collection("resultados").doc("grupoA").onSnapshot(d=>{
+    if(!d.exists) return;
+    resultados=d.data(); update();
+  });
 
-  db.collection("predicciones")
-    .onSnapshot(snapshot => {
-      predicciones = snapshot.docs.map(d => d.data());
-      actualizar();
-    });
+  db.collection("predicciones").onSnapshot(s=>{
+    pred=s.docs.map(d=>d.data()); update();
+  });
 
-  db.collection("usuarios")
-    .onSnapshot(snapshot => {
-      usuarios = {};
-      snapshot.docs.forEach(d => usuarios[d.id] = d.data());
-      actualizar();
-    });
+  db.collection("usuarios").onSnapshot(s=>{
+    users={}; s.docs.forEach(d=>users[d.id]=d.data()); update();
+  });
 
-  function actualizar() {
-    if (!resultados) return;
+  function update(){
+    if(!resultados) return;
 
-    let ranking = predicciones.map(p => {
-      const stats = calcularEstadisticas(p.partidos, resultados);
-
+    let r = pred.map(p=>{
+      const st=calcular(p.partidos,resultados);
       return {
-        uid: p.uid,
-        nombre: usuarios[p.uid]?.nickname || p.user,
-        puntos: stats.puntos,
-        exactos: stats.exactos,
-        resultados: stats.resultados
+        uid:p.uid,
+        nombre:users[p.uid]?.nickname||"?",
+        ...st
       };
     });
 
-    ranking.sort((a, b) => {
-      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
-      if (b.exactos !== a.exactos) return b.exactos - a.exactos;
-      return b.resultados - a.resultados;
-    });
+    r.sort((a,b)=>
+      b.puntos-a.puntos ||
+      b.exactos-a.exactos ||
+      b.resultados-a.resultados
+    );
 
-    pintarRanking(ranking);
+    pintarRanking(r);
+    pintarMisResultados(resultados);
   }
 }
 
 // 🎨 RANKING
-function pintarRanking(lista) {
-  const cont = document.getElementById("ranking");
+function pintarRanking(lista){
+  let html="<table><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr>";
+
+  lista.forEach((j,i)=>{
+    let pos=i+1;
+    if(i===0) pos="🥇";
+    else if(i===1) pos="🥈";
+    else if(i===2) pos="🥉";
+
+    html+=`<tr><td>${pos}</td><td>${j.nombre}</td><td>${j.puntos}</td></tr>`;
+  });
+
+  html+="</table>";
+  document.getElementById("ranking").innerHTML=html;
+}
+
+// 📊 MIS RESULTADOS
+function pintarMisResultados(resultados){
   const user = auth.currentUser;
+  db.collection("predicciones").doc(user.uid).get().then(doc=>{
+    if(!doc.exists) return;
 
-  let posicion = null;
+    const pred=doc.data().partidos;
 
-  let html = "<h3 id='miPosicion'></h3>";
-  html += "<table border='1' style='width:100%; text-align:center'>";
-  html += "<tr><th>#</th><th>Jugador</th><th>Puntos</th></tr>";
+    let html="<table><tr><th>Partido</th><th>Tu</th><th>Real</th></tr>";
 
-  lista.forEach((j, i) => {
-    let estilo = "";
-    let pos = i + 1;
+    partidos.forEach(p=>{
+      const pr=pred[p.id]||{};
+      const re=resultados[p.id]||{};
 
-    if (user && j.uid === user.uid) {
-      posicion = pos;
-      estilo += "border: 3px solid red;";
-    }
+      html+=`<tr>
+        <td>${p.local} vs ${p.visitante}</td>
+        <td>${pr.l??"-"}-${pr.v??"-"}</td>
+        <td>${re.l??"-"}-${re.v??"-"}</td>
+      </tr>`;
+    });
 
-    if (i === 0) {
-      estilo += "background: gold;";
-      pos = "🥇";
-    } else if (i === 1) {
-      estilo += "background: silver;";
-      pos = "🥈";
-    } else if (i === 2) {
-      estilo += "background: #cd7f32;";
-      pos = "🥉";
-    }
+    html+="</table>";
+    document.getElementById("misResultados").innerHTML=html;
+  });
+}
 
-    html += `
-      <tr style="${estilo}">
-        <td>${pos}</td>
-        <td>${j.nombre}</td>
+// 🚀 INIT
+window.onload=()=>{
+  render();
+  escucharRanking();
+};
+
+auth.onAuthStateChanged(user=>{
+  if(!user) mostrarPantalla("pantallaLogin");
+  else verificarAcceso();
+});      <td>${j.nombre}</td>
         <td>${j.puntos}</td>
       </tr>
     `;

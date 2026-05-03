@@ -5,74 +5,62 @@
   <title>Quiniela Mundial</title>
 
   <style>
-    body {
-      font-family: Arial;
-      background: #111;
-      color: white;
-      padding: 20px;
-    }
-
-    input {
-      margin: 5px;
-      padding: 5px;
-    }
-
-    button {
-      margin: 5px;
-      padding: 6px 10px;
-      cursor: pointer;
-    }
-
-    table {
-      margin-top: 10px;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 8px;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: auto;
-    }
-
-    h1, h2 {
-      text-align: center;
-    }
+    body { font-family: Arial; background:#111; color:white; padding:20px; }
+    input, button { margin:5px; padding:6px; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { padding:8px; text-align:center; }
+    .pantalla { display:none; }
+    .menu button { margin:5px; }
   </style>
 </head>
 <body>
 
-<div class="container">
+<h1>Quiniela Mundial</h1>
 
-  <h1>Quiniela Mundial</h1>
-
-  <!-- LOGIN -->
+<!-- LOGIN -->
+<div id="pantallaLogin" class="pantalla">
   <h2>Login</h2>
   <input type="email" id="email" placeholder="Correo">
-  <input type="password" id="password" placeholder="Contraseña">
-  <br>
-
+  <input type="password" id="password" placeholder="Contraseña"><br>
   <button onclick="registrar()">Registrarse</button>
-  <button onclick="login()">Iniciar Sesión</button>
-  <button onclick="logout()">Cerrar Sesión</button>
+  <button onclick="login()">Iniciar sesión</button>
+</div>
 
-  <!-- NICKNAME -->
-  <h2>Jugador</h2>
-  <input type="text" id="nickname" placeholder="Nickname (solo letras y números)">
-  <button onclick="guardarNickname()">Guardar Nickname</button>
+<!-- NICKNAME -->
+<div id="pantallaNickname" class="pantalla">
+  <h2>Crea tu Nickname</h2>
+  <input type="text" id="nickname" placeholder="Nickname">
+  <button onclick="guardarNickname()">Guardar</button>
+</div>
 
-  <!-- PARTIDOS -->
-  <h2>Fase de Grupos</h2>
-  <div id="partidos"></div>
+<!-- APP -->
+<div id="pantallaApp" class="pantalla">
 
-  <button onclick="guardarPredicciones()">Guardar Predicciones</button>
-  <button onclick="guardarResultados()">Guardar Resultados (Admin)</button>
+  <div class="menu">
+    <button onclick="mostrarVista('predicciones')">Predicciones</button>
+    <button onclick="mostrarVista('ranking')">Ranking</button>
+    <button onclick="mostrarVista('misResultados')">Mis Resultados</button>
+    <button onclick="logout()">Salir</button>
+  </div>
+
+  <!-- PREDICCIONES -->
+  <div id="vistaPredicciones">
+    <h2>Predicciones</h2>
+    <div id="partidos"></div>
+    <button onclick="guardarPredicciones()">Guardar</button>
+  </div>
 
   <!-- RANKING -->
-  <h2>Ranking</h2>
-  <div id="ranking"></div>
+  <div id="vistaRanking" style="display:none">
+    <h2>Ranking</h2>
+    <div id="ranking"></div>
+  </div>
+
+  <!-- MIS RESULTADOS -->
+  <div id="vistaMisResultados" style="display:none">
+    <h2>Mis Resultados</h2>
+    <div id="misResultados"></div>
+  </div>
 
 </div>
 
@@ -81,7 +69,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 
-<!-- TU SCRIPT -->
 <script src="script.js"></script>
 
 </body>
