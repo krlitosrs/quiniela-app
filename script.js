@@ -275,47 +275,45 @@ function pintarMisResultados(resultados){
   db.collection("predicciones").doc(user.uid).get().then(doc=>{
     if(!doc.exists) return;
 
-    const pred=doc.data().partidos;
-    let acumulado=0;
+    const pred = doc.data().partidos;
+    let total = 0;
 
-    let html=`
+    let html = `
       <table>
         <tr>
           <th>Partido</th>
           <th>Tú</th>
           <th>Real</th>
           <th>Puntos</th>
-          <th>Acumulado</th>
         </tr>
     `;
 
     partidos.forEach(p=>{
-      const pr=pred[p.id]||{};
-      const re=resultados[p.id]||{};
+      const pr = pred[p.id] || {};
+      const re = resultados[p.id] || {};
 
-      const puntos=calcularPuntosPartido(pr,re);
-      acumulado+=puntos;
+      const puntos = calcularPuntosPartido(pr, re);
+      total += puntos;
 
-      html+=`
+      html += `
         <tr>
           <td>${p.local} vs ${p.visitante}</td>
           <td>${pr.l ?? "-"} - ${pr.v ?? "-"}</td>
           <td>${re.l ?? "-"} - ${re.v ?? "-"}</td>
-          <td>${puntos}</td>
-          <td><strong>${acumulado}</strong></td>
+          <td><strong>${puntos}</strong></td>
         </tr>
       `;
     });
 
-    html+=`
+    html += `
       <tr>
-        <td colspan="4"><strong>Total</strong></td>
-        <td><strong>${acumulado}</strong></td>
+        <td colspan="3"><strong>Total</strong></td>
+        <td><strong>${total}</strong></td>
       </tr>
     </table>
     `;
 
-    document.getElementById("misResultados").innerHTML=html;
+    document.getElementById("misResultados").innerHTML = html;
   });
 }
 
