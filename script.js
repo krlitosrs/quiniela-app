@@ -61,7 +61,40 @@ function render() {
   });
 }
 
-function guardarPredicciones() {
+async function guardarPredicciones() {
+  const nombre = document.getElementById("nombre").value.trim();
+
+  if (!nombre) {
+    alert("Ingresa tu nombre");
+    return;
+  }
+
+  let datos = {};
+
+  partidos.forEach(p => {
+    let l = parseInt(document.getElementById(`p_l_${p.id}`).value);
+    let v = parseInt(document.getElementById(`p_v_${p.id}`).value);
+
+    if (isNaN(l)) l = 0;
+    if (isNaN(v)) v = 0;
+
+    datos[p.id] = { l, v };
+  });
+
+  try {
+    await db.collection("predicciones").doc(nombre).set({
+      nombre: nombre,
+      partidos: datos,
+      fecha: new Date()
+    });
+
+    alert("Predicciones guardadas en Firebase ✅");
+
+  } catch (error) {
+    console.error("Error guardando:", error);
+    alert("Error al guardar");
+  }
+}
   let datos = {};
 
   partidos.forEach(p => {
