@@ -1,3 +1,4 @@
+alert("JS cargado");
 <!DOCTYPE html>
 <html lang="es">
 <head>
