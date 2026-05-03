@@ -10,7 +10,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// 🔐 ADMIN (solo visual por ahora)
+// 🔐 ADMIN (solo visual)
 const ES_ADMIN = true;
 
 // ⚽ PARTIDOS
@@ -37,9 +37,9 @@ function render() {
         <input type="number" id="p_v_${p.id}" min="0" max="30">
 
         ${ES_ADMIN ? `
-        <input type="number" id="r_l_${p.id}" placeholder="R">
+        <input type="number" id="r_l_${p.id}" min="0" max="30" placeholder="R">
         -
-        <input type="number" id="r_v_${p.id}" placeholder="R">
+        <input type="number" id="r_v_${p.id}" min="0" max="30" placeholder="R">
         ` : ""}
       </div>
     `;
@@ -55,7 +55,6 @@ function registrar() {
 
   auth.createUserWithEmailAndPassword(email, pass)
     .then(async (cred) => {
-
       await db.collection("usuarios").doc(cred.user.uid).set({
         email: email,
         permitido: false
@@ -80,7 +79,7 @@ function logout() {
   auth.signOut();
 }
 
-// 🔒 CONTROL DE ACCESO
+// 🔒 CONTROL ACCESO
 async function verificarAcceso() {
   const user = auth.currentUser;
   if (!user) return;
@@ -103,7 +102,7 @@ function validarNickname(nick) {
   return /^[a-zA-Z0-9]{1,25}$/.test(nick);
 }
 
-// 👤 GUARDAR NICKNAME
+// 👤 NICKNAME
 async function guardarNickname() {
   const user = auth.currentUser;
   if (!user) return alert("Debes iniciar sesión");
@@ -111,7 +110,7 @@ async function guardarNickname() {
   const nick = document.getElementById("nickname").value.trim();
 
   if (!validarNickname(nick)) {
-    return alert("Nickname inválido (solo letras/números, máx 25)");
+    return alert("Nickname inválido");
   }
 
   await db.collection("usuarios").doc(user.uid).set({
@@ -122,7 +121,6 @@ async function guardarNickname() {
   verificarNickname();
 }
 
-// 🔒 BLOQUEO SI NO TIENE NICK
 async function verificarNickname() {
   const user = auth.currentUser;
   if (!user) return;
@@ -167,22 +165,29 @@ async function guardarResultados() {
 
   let datos = {};
 
-  partidos.forEach(p => {
+  for (let p of partidos) {
     let l = parseInt(document.getElementById(`r_l_${p.id}`).value);
     let v = parseInt(document.getElementById(`r_v_${p.id}`).value);
 
-    if (!isNaN(l) && !isNaN(v)) {
-      datos[p.id] = { l, v };
+    if (isNaN(l) || isNaN(v)) continue;
+
+    if (l < 0 || v < 0 || l > 30 || v > 30) {
+      alert("Resultados inválidos");
+      return;
     }
-  });
+
+    datos[p.id] = { l, v };
+  }
 
   await db.collection("resultados").doc("grupoA").set(datos);
   alert("Resultados guardados");
 }
 
-// 🧠 PUNTOS
-function calcularPuntos(pred, real) {
+// 🧠 ESTADÍSTICAS (puntos + desempate)
+function calcularEstadisticas(pred, real) {
   let puntos = 0;
+  let exactos = 0;
+  let resultados = 0;
 
   Object.keys(real).forEach(id => {
     if (!pred[id]) return;
@@ -190,15 +195,24 @@ function calcularPuntos(pred, real) {
     const pr = pred[id];
     const re = real[id];
 
-    if (pr.l === re.l && pr.v === re.v) puntos += 3;
-    else if (
+    if (pr.l === re.l && pr.v === re.v) {
+      puntos += 5;
+      exactos++;
+      resultados++;
+      return;
+    }
+
+    if (
       (pr.l > pr.v && re.l > re.v) ||
       (pr.l < pr.v && re.l < re.v) ||
       (pr.l === pr.v && re.l === re.v)
-    ) puntos += 1;
+    ) {
+      puntos += 3;
+      resultados++;
+    }
   });
 
-  return puntos;
+  return { puntos, exactos, resultados };
 }
 
 // 🏆 RANKING
@@ -230,13 +244,23 @@ function escucharRanking() {
   function actualizar() {
     if (!resultados) return;
 
-    let ranking = predicciones.map(p => ({
-      uid: p.uid,
-      nombre: usuarios[p.uid]?.nickname || p.user,
-      puntos: calcularPuntos(p.partidos, resultados)
-    }));
+    let ranking = predicciones.map(p => {
+      const stats = calcularEstadisticas(p.partidos, resultados);
 
-    ranking.sort((a, b) => b.puntos - a.puntos);
+      return {
+        uid: p.uid,
+        nombre: usuarios[p.uid]?.nickname || p.user,
+        puntos: stats.puntos,
+        exactos: stats.exactos,
+        resultados: stats.resultados
+      };
+    });
+
+    ranking.sort((a, b) => {
+      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+      if (b.exactos !== a.exactos) return b.exactos - a.exactos;
+      return b.resultados - a.resultados;
+    });
 
     pintarRanking(ranking);
   }
