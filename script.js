@@ -1,19 +1,19 @@
-// 🔥 CONFIG FIREBASE (YA CORRECTO)
+// 🔥 FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCXwjx7-rkh7arUF2ma7rK_gE1luwSB6ic",
   authDomain: "quiniela-app-7cbb0.firebaseapp.com",
   projectId: "quiniela-app-7cbb0",
-  storageBucket: "quiniela-app-7cbb0.firebasestorage.app",
-  messagingSenderId: "712745211307",
-  appId: "1:712745211307:web:bd9853fa27efc17df46eee"
 };
 
 firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
+const auth = firebase.auth();
 
-console.log("Firebase conectado:", !!db);
+// 🔐 ADMIN
+const ES_ADMIN = true;
 
-// 🔥 PARTIDOS (GRUPO A COMPLETO)
+// ⚽ PARTIDOS
 const partidos = [
   { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
   { id: 2, grupo: "A", local: "Brasil", visitante: "Argentina" },
@@ -23,43 +23,79 @@ const partidos = [
   { id: 6, grupo: "A", local: "Argentina", visitante: "Francia" }
 ];
 
-// 🔥 RENDER UI
+// 🎨 RENDER
 function render() {
-  const contenedor = document.getElementById("partidos");
-  contenedor.innerHTML = "";
-
-  contenedor.innerHTML += `<h3>Grupo A</h3>`;
+  const cont = document.getElementById("partidos");
+  cont.innerHTML = "<h3>Grupo A</h3>";
 
   partidos.forEach(p => {
-    contenedor.innerHTML += `
-      <div class="match">
-        <span>${p.local} vs ${p.visitante}</span>
-
-        <input type="number" id="p_l_${p.id}" min="0" max="30" placeholder="P">
+    cont.innerHTML += `
+      <div>
+        ${p.local} vs ${p.visitante}
+        <input type="number" id="p_l_${p.id}" min="0" max="30">
         -
-        <input type="number" id="p_v_${p.id}" min="0" max="30" placeholder="P">
+        <input type="number" id="p_v_${p.id}" min="0" max="30">
+
+        ${ES_ADMIN ? `
+        <input type="number" id="r_l_${p.id}" placeholder="R">
+        -
+        <input type="number" id="r_v_${p.id}" placeholder="R">
+        ` : ""}
       </div>
     `;
   });
-
-  contenedor.innerHTML += `<div id="tabla_A"></div>`;
 }
 
-// 🔥 GUARDAR NOMBRE
-function guardarNombre() {
-  const nombre = document.getElementById("nombre").value;
-  localStorage.setItem("usuario", nombre);
-  alert("Nombre guardado");
+// 🔐 AUTH
+function registrar() {
+  const email = emailInput();
+  const pass = passInput();
+
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(() => alert("Registrado"))
+    .catch(e => alert(e.message));
 }
 
-// 🔥 GUARDAR PREDICCIONES EN FIREBASE
+function login() {
+  const email = emailInput();
+  const pass = passInput();
+
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => alert("Bienvenido"))
+    .catch(e => alert(e.message));
+}
+
+function logout() {
+  auth.signOut();
+}
+
+function emailInput() {
+  return document.getElementById("email").value;
+}
+
+function passInput() {
+  return document.getElementById("password").value;
+}
+
+// 👤 NICKNAME
+async function guardarNickname() {
+  const user = auth.currentUser;
+  if (!user) return alert("Debes iniciar sesión");
+
+  const nick = document.getElementById("nickname").value;
+
+  await db.collection("usuarios").doc(user.uid).set({
+    email: user.email,
+    nickname: nick
+  });
+
+  alert("Nickname guardado");
+}
+
+// 💾 PREDICCIONES
 async function guardarPredicciones() {
-  const nombre = document.getElementById("nombre").value.trim();
-
-  if (!nombre) {
-    alert("Ingresa tu nombre");
-    return;
-  }
+  const user = auth.currentUser;
+  if (!user) return alert("Inicia sesión");
 
   let datos = {};
 
@@ -73,103 +109,51 @@ async function guardarPredicciones() {
     datos[p.id] = { l, v };
   });
 
-  try {
-    await db.collection("predicciones").doc(nombre).set({
-      nombre,
-      partidos: datos,
-      fecha: new Date()
-    });
+  await db.collection("predicciones").doc(user.uid).set({
+    user: user.email,
+    partidos: datos
+  });
 
-    alert("Predicciones guardadas en Firebase ✅");
-
-  } catch (error) {
-    console.error("Error guardando:", error);
-    alert("Error al guardar");
-  }
+  alert("Predicciones guardadas");
 }
 
-// 🔥 ESCUCHAR RESULTADOS (EN TIEMPO REAL)
-function escucharResultados() {
-  db.collection("resultados").doc("grupoA")
-    .onSnapshot(doc => {
-      if (doc.exists) {
-        const datos = doc.data();
-        calcularTablas(datos);
-      }
-    });
-}
+// 🧾 RESULTADOS
+async function guardarResultados() {
+  if (!ES_ADMIN) return;
 
-// 🔥 CALCULAR TABLA
-function calcularTablas(resultados) {
-  let tabla = {};
+  let datos = {};
 
   partidos.forEach(p => {
-    const { local, visitante } = p;
+    let l = parseInt(document.getElementById(`r_l_${p.id}`).value);
+    let v = parseInt(document.getElementById(`r_v_${p.id}`).value);
 
-    if (!tabla[local]) tabla[local] = crearEquipo();
-    if (!tabla[visitante]) tabla[visitante] = crearEquipo();
-
-    const res = resultados[p.id];
-    if (!res) return;
-
-    const l = res.l;
-    const v = res.v;
-
-    tabla[local].gf += l;
-    tabla[local].gc += v;
-
-    tabla[visitante].gf += v;
-    tabla[visitante].gc += l;
-
-    if (l > v) tabla[local].pts += 3;
-    else if (l < v) tabla[visitante].pts += 3;
-    else {
-      tabla[local].pts += 1;
-      tabla[visitante].pts += 1;
+    if (!isNaN(l) && !isNaN(v)) {
+      datos[p.id] = { l, v };
     }
   });
 
-  let lista = Object.entries(tabla).map(([equipo, data]) => ({
-    equipo,
-    ...data,
-    dg: data.gf - data.gc
-  }));
+  await db.collection("resultados").doc("grupoA").set(datos);
 
-  lista.sort((a, b) =>
-    b.pts - a.pts || b.dg - a.dg || b.gf - a.gf
-  );
-
-  pintarTabla(lista);
+  alert("Resultados guardados");
 }
 
-// 🔥 CREAR EQUIPO
-function crearEquipo() {
-  return { pts: 0, gf: 0, gc: 0 };
+// 📊 TABLA
+function escucharResultados() {
+  db.collection("resultados").doc("grupoA")
+    .onSnapshot(doc => {
+      if (!doc.exists) return;
+      console.log("Resultados actualizados:", doc.data());
+    });
 }
 
-// 🔥 PINTAR TABLA
-function pintarTabla(lista) {
-  const cont = document.getElementById("tabla_A");
-
-  let html = "<table border='1' style='width:100%; color:white'>";
-  html += "<tr><th>#</th><th>Equipo</th><th>Pts</th><th>DG</th></tr>";
-
-  lista.forEach((e, i) => {
-    html += `<tr>
-      <td>${i + 1}</td>
-      <td>${e.equipo}</td>
-      <td>${e.pts}</td>
-      <td>${e.dg}</td>
-    </tr>`;
-  });
-
-  html += "</table>";
-
-  cont.innerHTML = html;
-}
-
-// 🔥 INICIO
+// 🚀 INIT
 window.onload = () => {
   render();
   escucharResultados();
 };
+
+auth.onAuthStateChanged(user => {
+  if (user) {
+    console.log("Logueado:", user.email);
+  }
+});

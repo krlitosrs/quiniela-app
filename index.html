@@ -11,25 +11,34 @@
 
   <div class="container">
 
+    <!-- LOGIN -->
+    <h2>Login</h2>
+    <input type="email" id="email" placeholder="Correo">
+    <input type="password" id="password" placeholder="Contraseña">
+    <br><br>
+    <button onclick="registrar()">Registrarse</button>
+    <button onclick="login()">Iniciar Sesión</button>
+    <button onclick="logout()">Cerrar Sesión</button>
+
+    <!-- USUARIO -->
     <h2>Jugador</h2>
-    <input type="text" id="nombre" placeholder="Tu nombre">
-    <button onclick="guardarNombre()">Guardar Nombre</button>
+    <input type="text" id="nickname" placeholder="Nickname (para ranking)">
+    <button onclick="guardarNickname()">Guardar Nickname</button>
 
+    <!-- PARTIDOS -->
     <h2>Fase de Grupos</h2>
-
     <div id="partidos"></div>
 
     <button onclick="guardarPredicciones()">Guardar Predicciones</button>
-
-    <h2>Resultado</h2>
-    <p id="resultado"></p>
-
-    <h2>Ranking</h2>
-    <div id="ranking"></div>
+    <button onclick="guardarResultados()">Guardar Resultados (Admin)</button>
 
   </div>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
   <script src="script.js"></script>
 
 </body>
