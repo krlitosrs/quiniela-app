@@ -65,7 +65,19 @@ function registrar(){
     auth.signOut();
   });
 }
-function login(){ auth.signInWithEmailAndPassword(email.value,password.value); }
+function login(){
+  const emailVal = document.getElementById("email").value;
+  const passVal = document.getElementById("password").value;
+
+  auth.signInWithEmailAndPassword(emailVal, passVal)
+    .then(() => {
+      console.log("Login correcto");
+    })
+    .catch((error) => {
+      console.error(error);
+      alert("Error: " + error.message);
+    });
+}
 function logout(){ auth.signOut(); }
 
 // 🔒 ACCESO
