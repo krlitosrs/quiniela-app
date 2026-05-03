@@ -7,6 +7,8 @@ const partidos = [
   { id: 6, grupo: "A", local: "Argentina", visitante: "Francia" }
 ];
 
+const ES_ADMIN = false; // 🔥 cambia a true solo para ti
+
 function render() {
   const contenedor = document.getElementById("partidos");
   contenedor.innerHTML = "";
@@ -28,10 +30,12 @@ function render() {
             -
             <input type="number" id="p_v_${p.id}" min="0" max="30" placeholder="P">
 
-            <!-- Resultado real -->
-            <input type="number" id="r_l_${p.id}" min="0" max="30" placeholder="R">
-            -
-            <input type="number" id="r_v_${p.id}" min="0" max="30" placeholder="R">
+            ${ES_ADMIN ? `
+              <!-- Resultado real -->
+              <input type="number" id="r_l_${p.id}" min="0" max="30" placeholder="R">
+              -
+              <input type="number" id="r_v_${p.id}" min="0" max="30" placeholder="R">
+            ` : ""}
           </div>
         `;
       });
@@ -54,16 +58,20 @@ function guardarPredicciones() {
   });
 
   localStorage.setItem("predicciones", JSON.stringify(datos));
+
+  alert("Predicciones guardadas");
 }
 
 function guardarResultados() {
+  if (!ES_ADMIN) return;
+
   let datos = {};
 
   partidos.forEach(p => {
     let l = parseInt(document.getElementById(`r_l_${p.id}`).value);
     let v = parseInt(document.getElementById(`r_v_${p.id}`).value);
 
-    if (isNaN(l)) return; // solo si ya hay resultado
+    if (isNaN(l)) return;
 
     datos[p.id] = { l, v };
   });
