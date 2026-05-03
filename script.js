@@ -1,16 +1,34 @@
+const partidos = [
+  { id: 1, local: "Brasil", visitante: "Alemania" },
+  { id: 2, local: "Argentina", visitante: "Francia" }
+];
+
+function render() {
+  const contenedor = document.getElementById("partidos");
+  contenedor.innerHTML = "";
+
+  partidos.forEach(p => {
+    contenedor.innerHTML += `
+      <div class="match">
+        <span>${p.local} vs ${p.visitante}</span>
+        <input type="number" id="l_${p.id}" placeholder="0">
+        -
+        <input type="number" id="v_${p.id}" placeholder="0">
+      </div>
+    `;
+  });
+}
+
 function guardar() {
-  const g1l = document.getElementById("g1_local").value;
-  const g1v = document.getElementById("g1_visit").value;
+  let datos = {};
 
-  const g2l = document.getElementById("g2_local").value;
-  const g2v = document.getElementById("g2_visit").value;
+  partidos.forEach(p => {
+    const l = document.getElementById(`l_${p.id}`).value;
+    const v = document.getElementById(`v_${p.id}`).value;
 
-  const datos = {
-    g1: { l: g1l, v: g1v },
-    g2: { l: g2l, v: g2v }
-  };
+    datos[p.id] = { l, v };
+  });
 
-  // Guardar en localStorage
   localStorage.setItem("quiniela", JSON.stringify(datos));
 
   calcular(datos);
@@ -18,46 +36,55 @@ function guardar() {
 
 function cargar() {
   const datos = JSON.parse(localStorage.getItem("quiniela"));
-
   if (!datos) return;
 
-  document.getElementById("g1_local").value = datos.g1.l;
-  document.getElementById("g1_visit").value = datos.g1.v;
+  partidos.forEach(p => {
+    const inputL = document.getElementById(`l_${p.id}`);
+    const inputV = document.getElementById(`v_${p.id}`);
 
-  document.getElementById("g2_local").value = datos.g2.l;
-  document.getElementById("g2_visit").value = datos.g2.v;
+    // 👇 validación clave
+    if (inputL && inputV && datos[p.id]) {
+      inputL.value = datos[p.id].l;
+      inputV.value = datos[p.id].v;
+    }
+  });
 
   calcular(datos);
 }
 
 function calcular(datos) {
-  const real = [
-    { l: 2, v: 1 },
-    { l: 1, v: 1 }
-  ];
-
-  const user = [
-    { l: parseInt(datos.g1.l), v: parseInt(datos.g1.v) },
-    { l: parseInt(datos.g2.l), v: parseInt(datos.g2.v) }
-  ];
+  const reales = {
+    1: { l: 2, v: 1 },
+    2: { l: 1, v: 1 }
+  };
 
   let puntos = 0;
 
-  for (let i = 0; i < real.length; i++) {
-    if (user[i].l === real[i].l && user[i].v === real[i].v) {
+  partidos.forEach(p => {
+    const user = datos[p.id];
+    const real = reales[p.id];
+
+    if (!user) return;
+
+    const ul = parseInt(user.l);
+    const uv = parseInt(user.v);
+
+    if (ul === real.l && uv === real.v) {
       puntos += 3;
     } else if (
-      (user[i].l > user[i].v && real[i].l > real[i].v) ||
-      (user[i].l < user[i].v && real[i].l < real[i].v) ||
-      (user[i].l === user[i].v && real[i].l === real[i].v)
+      (ul > uv && real.l > real.v) ||
+      (ul < uv && real.l < real.v) ||
+      (ul === uv && real.l === real.v)
     ) {
       puntos += 1;
     }
-  }
+  });
 
   document.getElementById("resultado").innerText =
     "Puntos obtenidos: " + puntos;
 }
 
-// Ejecutar al cargar la página
-window.onload = cargar;
+window.onload = () => {
+  render();
+  cargar();
+};
