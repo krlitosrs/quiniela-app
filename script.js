@@ -11,9 +11,9 @@ function render() {
     contenedor.innerHTML += `
       <div class="match">
         <span>${p.local} vs ${p.visitante}</span>
-        <input type="number" id="l_${p.id}" placeholder="0">
-        -
-        <input type="number" id="v_${p.id}" placeholder="0">
+        <input type="number" id="l_${p.id}" placeholder="0" min="0" max="30">
+-
+	<input type="number" id="v_${p.id}" placeholder="0" min="0" max="30">
       </div>
     `;
   });
@@ -41,10 +41,17 @@ function guardar() {
   let datos = {};
 
   partidos.forEach(p => {
-    const l = document.getElementById(`l_${p.id}`).value;
-    const v = document.getElementById(`v_${p.id}`).value;
+    let l = parseInt(document.getElementById(`l_${p.id}`).value);
+let v = parseInt(document.getElementById(`v_${p.id}`).value);
 
-    datos[p.id] = { l, v };
+// Validación
+if (isNaN(l) || l < 0) l = 0;
+if (isNaN(v) || v < 0) v = 0;
+
+if (l > 30) l = 30;
+if (v > 30) v = 30;
+
+datos[p.id] = { l, v };
   });
 
   localStorage.setItem("quiniela", JSON.stringify(datos));
