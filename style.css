@@ -1,85 +1,132 @@
+/* BASE */
 body {
   font-family: Arial;
-  background: #0f0f0f;
-  color: #fff;
-  margin: 0;
-  padding: 0;
+  background:#0f0f0f;
+  color:white;
+  margin:0;
 }
 
 h1 {
-  text-align: center;
-  margin-top: 20px;
+  text-align:center;
+  margin:20px 0;
 }
 
+/* CONTENEDORES */
 .pantalla {
-  display: none;
-  max-width: 900px;
-  margin: 40px auto;
-  padding: 20px;
-  background: #1a1a1a;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  display:none;
+  max-width:1000px;
+  margin:20px auto;
+  padding:20px;
+  background:#1a1a1a;
+  border-radius:10px;
 }
 
-input {
-  padding: 8px;
-  margin: 5px;
-  border-radius: 5px;
-  border: none;
-  width: 80px;
-  text-align: center;
+/* MENÚ */
+.menu {
+  text-align:center;
+  margin-bottom:15px;
 }
 
 button {
-  padding: 8px 12px;
-  margin: 5px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background: #e50914;
-  color: white;
-  font-weight: bold;
+  margin:5px;
+  padding:8px 12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  background:#e53935;
+  color:white;
 }
 
 button:hover {
-  background: #ff1f2a;
+  background:#c62828;
 }
 
-.menu {
-  text-align: center;
-  margin-bottom: 20px;
+/* INPUTS */
+input {
+  padding:6px;
+  margin:3px;
+  text-align:center;
+  border-radius:5px;
+  border:none;
 }
 
-.menu button {
-  background: #333;
-}
-
-.menu button:hover {
-  background: #555;
-}
-
+/* TABLAS */
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-th {
-  background: #222;
+  width:100%;
+  border-collapse:collapse;
 }
 
 td, th {
-  padding: 10px;
-  border-bottom: 1px solid #333;
+  padding:8px;
+  border-bottom:1px solid #333;
+  text-align:center;
 }
 
-tr:hover {
-  background: #2a2a2a;
-}
-
-#partidos div {
-  margin: 10px 0;
-  padding: 10px;
+/* 🔥 PARTIDOS (NUEVO DISEÑO) */
+.partido-card {
   background: #222;
-  border-radius: 6px;
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  transition: 0.2s;
+}
+
+.partido-card:hover {
+  background:#2a2a2a;
+}
+
+.partido-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 8px;
+}
+
+.partido-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* EQUIPOS */
+.equipo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 30%;
+}
+
+.equipo img {
+  width: 24px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+
+/* MARCADOR */
+.marcador {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.marcador input {
+  width: 40px;
+  font-size: 16px;
+  background:#111;
+  color:white;
+}
+
+.marcador span {
+  font-size: 18px;
+}
+
+/* ESTADO */
+.cerrado {
+  text-align: center;
+  color: #ff5252;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: bold;
 }
