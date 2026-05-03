@@ -1,36 +1,161 @@
-alert("JS cargado");
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Quiniela Mundial</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
+const partidos = [
+  { id: 1, local: "Brasil", visitante: "Alemania" },
+  { id: 2, local: "Argentina", visitante: "Francia" }
+];
 
-  <h1>Quiniela Mundial</h1>
+function render() {
+  const contenedor = document.getElementById("partidos");
+  contenedor.innerHTML = "";
 
-  <div class="container">
+  partidos.forEach(p => {
+    contenedor.innerHTML += `
+      <div class="match">
+        <span>${p.local} vs ${p.visitante}</span>
+        <input type="number" id="l_${p.id}" placeholder="0">
+        -
+        <input type="number" id="v_${p.id}" placeholder="0">
+      </div>
+    `;
+  });
+}
 
-    <h2>Jugador</h2>
-    <input type="text" id="nombre" placeholder="Tu nombre">
-    <button onclick="guardarNombre()">Guardar Nombre</button>
+function guardarNombre() {
+  const nombre = document.getElementById("nombre").value;
+  localStorage.setItem("usuario", nombre);
+}
 
-    <h2>Fase de Grupos</h2>
+function cargarNombre() {
+  const nombre = localStorage.getItem("usuario");
+  if (nombre) {
+    document.getElementById("nombre").value = nombre;
+  }
+}
 
-    <div id="partidos"></div>
+function guardar() {
+  const nombre = document.getElementById("nombre").value?.trim();
+  if (!nombre) {
+    alert("Ingresa tu nombre primero");
+    return;
+  }
 
-    <button onclick="guardar()">Guardar Predicciones</button>
+  let datos = {};
 
-    <h2>Resultado</h2>
-    <p id="resultado"></p>
+  partidos.forEach(p => {
+    const l = document.getElementById(`l_${p.id}`).value;
+    const v = document.getElementById(`v_${p.id}`).value;
 
-    <h2>Ranking</h2>
-    <div id="ranking"></div>
+    datos[p.id] = { l, v };
+  });
 
-  </div>
+  localStorage.setItem("quiniela", JSON.stringify(datos));
+  localStorage.setItem("usuario", nombre);
 
-  <script src="script.js"></script>
+  const puntos = calcular(datos, false);
 
-</body>
-</html>
+  let jugadores = JSON.parse(localStorage.getItem("jugadores")) || [];
+
+  const idx = jugadores.findIndex(j => j.nombre === nombre);
+
+  const registro = {
+    nombre,
+    puntos,
+    fecha: new Date().toISOString()
+  };
+
+  if (idx >= 0) {
+    jugadores[idx] = registro;
+  } else {
+    jugadores.push(registro);
+  }
+
+  localStorage.setItem("jugadores", JSON.stringify(jugadores));
+
+  mostrarRanking();
+}
+
+function cargar() {
+  const datos = JSON.parse(localStorage.getItem("quiniela"));
+  if (!datos) return;
+
+  partidos.forEach(p => {
+    const inputL = document.getElementById(`l_${p.id}`);
+    const inputV = document.getElementById(`v_${p.id}`);
+
+    if (inputL && inputV && datos[p.id]) {
+      inputL.value = datos[p.id].l;
+      inputV.value = datos[p.id].v;
+    }
+  });
+
+  calcular(datos);
+}
+
+function calcular(datos, pintar = true) {
+  const reales = {
+    1: { l: 2, v: 1 },
+    2: { l: 1, v: 1 }
+  };
+
+  let puntos = 0;
+
+  partidos.forEach(p => {
+    const user = datos[p.id];
+    const real = reales[p.id];
+
+    if (!user) return;
+
+    const ul = parseInt(user.l);
+    const uv = parseInt(user.v);
+
+    if (ul === real.l && uv === real.v) {
+      puntos += 3;
+    } else if (
+      (ul > uv && real.l > real.v) ||
+      (ul < uv && real.l < real.v) ||
+      (ul === uv && real.l === real.v)
+    ) {
+      puntos += 1;
+    }
+  });
+
+  if (pintar) {
+    document.getElementById("resultado").innerText =
+      "Puntos obtenidos: " + puntos;
+  }
+
+  return puntos;
+}
+
+function mostrarRanking() {
+  const cont = document.getElementById("ranking");
+  let jugadores = JSON.parse(localStorage.getItem("jugadores")) || [];
+
+  jugadores.sort((a, b) => b.puntos - a.puntos);
+
+  if (jugadores.length === 0) {
+    cont.innerHTML = "<p>Sin datos aún</p>";
+    return;
+  }
+
+  let html = "<table border='1' style='width:100%; color:white'>";
+  html += "<tr><th>#</th><th>Nombre</th><th>Puntos</th></tr>";
+
+  jugadores.forEach((j, i) => {
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td>${j.nombre}</td>
+      <td>${j.puntos}</td>
+    </tr>`;
+  });
+
+  html += "</table>";
+
+  cont.innerHTML = html;
+}
+
+window.onload = () => {
+  render();
+  cargar();
+  cargarNombre();
+  mostrarRanking();
+};
