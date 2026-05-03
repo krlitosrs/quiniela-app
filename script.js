@@ -85,6 +85,18 @@ function calcular(datos) {
 }
 
 window.onload = () => {
-  render();
-  cargar();
+ 	 render();
+  	cargar();
+	cargarNombre();
 };
+function guardarNombre() {
+  const nombre = document.getElementById("nombre").value;
+  localStorage.setItem("usuario", nombre);
+}
+
+function cargarNombre() {
+  const nombre = localStorage.getItem("usuario");
+  if (nombre) {
+    document.getElementById("nombre").value = nombre;
+  }
+}
