@@ -10,28 +10,20 @@
   <h1>Quiniela Mundial</h1>
 
   <div class="container">
-    <h2>Predicciones - Fase de Grupos</h2>
+    
+    <h2>Fase de Grupos</h2>
 
-    <div class="match">
-      <span>Brasil vs Alemania</span>
-      <input type="number" id="g1_local" placeholder="0">
-      -
-      <input type="number" id="g1_visit" placeholder="0">
-    </div>
-
-    <div class="match">
-      <span>Argentina vs Francia</span>
-      <input type="number" id="g2_local" placeholder="0">
-      -
-      <input type="number" id="g2_visit" placeholder="0">
-    </div>
+    <!-- Aquí se generarán los partidos automáticamente -->
+    <div id="partidos"></div>
 
     <button onclick="guardar()">Guardar Predicciones</button>
 
     <h2>Resultado</h2>
     <p id="resultado"></p>
+
   </div>
 
   <script src="script.js"></script>
+
 </body>
 </html>
