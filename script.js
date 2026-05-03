@@ -1,5 +1,4 @@
 const partidos = [
-  // Grupo A (4 equipos → 6 partidos)
   { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
   { id: 2, grupo: "A", local: "Brasil", visitante: "Argentina" },
   { id: 3, grupo: "A", local: "Brasil", visitante: "Francia" },
@@ -23,9 +22,16 @@ function render() {
         contenedor.innerHTML += `
           <div class="match">
             <span>${p.local} vs ${p.visitante}</span>
-            <input type="number" id="l_${p.id}" min="0" max="30" placeholder="0">
+            
+            <!-- Predicción -->
+            <input type="number" id="p_l_${p.id}" min="0" max="30" placeholder="P">
             -
-            <input type="number" id="v_${p.id}" min="0" max="30" placeholder="0">
+            <input type="number" id="p_v_${p.id}" min="0" max="30" placeholder="P">
+
+            <!-- Resultado real -->
+            <input type="number" id="r_l_${p.id}" min="0" max="30" placeholder="R">
+            -
+            <input type="number" id="r_v_${p.id}" min="0" max="30" placeholder="R">
           </div>
         `;
       });
@@ -34,46 +40,40 @@ function render() {
   });
 }
 
-function guardarNombre() {
-  const nombre = document.getElementById("nombre").value;
-  localStorage.setItem("usuario", nombre);
-}
-
-function cargarNombre() {
-  const nombre = localStorage.getItem("usuario");
-  if (nombre) {
-    document.getElementById("nombre").value = nombre;
-  }
-}
-
-function guardar() {
-  const nombre = document.getElementById("nombre").value?.trim();
-  if (!nombre) {
-    alert("Ingresa tu nombre primero");
-    return;
-  }
-
+function guardarPredicciones() {
   let datos = {};
 
   partidos.forEach(p => {
-    let l = parseInt(document.getElementById(`l_${p.id}`).value);
-    let v = parseInt(document.getElementById(`v_${p.id}`).value);
+    let l = parseInt(document.getElementById(`p_l_${p.id}`).value);
+    let v = parseInt(document.getElementById(`p_v_${p.id}`).value);
 
-    if (isNaN(l) || l < 0) l = 0;
-    if (isNaN(v) || v < 0) v = 0;
-
-    if (l > 30) l = 30;
-    if (v > 30) v = 30;
+    if (isNaN(l)) l = 0;
+    if (isNaN(v)) v = 0;
 
     datos[p.id] = { l, v };
   });
 
-  localStorage.setItem("quiniela", JSON.stringify(datos));
+  localStorage.setItem("predicciones", JSON.stringify(datos));
+}
+
+function guardarResultados() {
+  let datos = {};
+
+  partidos.forEach(p => {
+    let l = parseInt(document.getElementById(`r_l_${p.id}`).value);
+    let v = parseInt(document.getElementById(`r_v_${p.id}`).value);
+
+    if (isNaN(l)) return; // solo si ya hay resultado
+
+    datos[p.id] = { l, v };
+  });
+
+  localStorage.setItem("resultados", JSON.stringify(datos));
 
   calcularTablas(datos);
 }
 
-function calcularTablas(datos) {
+function calcularTablas(resultados) {
   const grupos = [...new Set(partidos.map(p => p.grupo))];
 
   grupos.forEach(grupo => {
@@ -87,11 +87,11 @@ function calcularTablas(datos) {
       if (!tabla[local]) tabla[local] = crearEquipo();
       if (!tabla[visitante]) tabla[visitante] = crearEquipo();
 
-      const resultado = datos[p.id];
-      if (!resultado) return;
+      const res = resultados[p.id];
+      if (!res) return;
 
-      const l = parseInt(resultado.l);
-      const v = parseInt(resultado.v);
+      const l = res.l;
+      const v = res.v;
 
       tabla[local].gf += l;
       tabla[local].gc += v;
@@ -99,11 +99,9 @@ function calcularTablas(datos) {
       tabla[visitante].gf += v;
       tabla[visitante].gc += l;
 
-      if (l > v) {
-        tabla[local].pts += 3;
-      } else if (l < v) {
-        tabla[visitante].pts += 3;
-      } else {
+      if (l > v) tabla[local].pts += 3;
+      else if (l < v) tabla[visitante].pts += 3;
+      else {
         tabla[local].pts += 1;
         tabla[visitante].pts += 1;
       }
@@ -124,11 +122,7 @@ function calcularTablas(datos) {
 }
 
 function crearEquipo() {
-  return {
-    pts: 0,
-    gf: 0,
-    gc: 0
-  };
+  return { pts: 0, gf: 0, gc: 0 };
 }
 
 function pintarTabla(grupo, lista) {
@@ -151,25 +145,6 @@ function pintarTabla(grupo, lista) {
   cont.innerHTML = html;
 }
 
-function cargar() {
-  const datos = JSON.parse(localStorage.getItem("quiniela"));
-  if (!datos) return;
-
-  partidos.forEach(p => {
-    const inputL = document.getElementById(`l_${p.id}`);
-    const inputV = document.getElementById(`v_${p.id}`);
-
-    if (inputL && inputV && datos[p.id]) {
-      inputL.value = datos[p.id].l;
-      inputV.value = datos[p.id].v;
-    }
-  });
-
-  calcularTablas(datos);
-}
-
 window.onload = () => {
   render();
-  cargar();
-  cargarNombre();
 };
