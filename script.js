@@ -276,7 +276,7 @@ auth.onAuthStateChanged(u=>{
 // 🚀 INIT
 window.onload=()=>{
   render();
-  escucharRanking();
+  escuchar();
   mostrarPantalla("pantallaLogin");
 };
 
