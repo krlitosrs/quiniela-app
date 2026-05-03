@@ -1,3 +1,20 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyCXwjx7-rkh7arUF2ma7rK_gE1luwSB6ic",
+  authDomain: "quiniela-app-7cbb0.firebaseapp.com",
+  projectId: "quiniela-app-7cbb0",
+  storageBucket: "quiniela-app-7cbb0.firebasestorage.app",
+  messagingSenderId: "712745211307",
+  appId: "1:712745211307:web:bd9853fa27efc17df46eee"
+};
+
+// Inicializar Firebase (FORMA CORRECTA PARA TU SETUP)
+firebase.initializeApp(firebaseConfig);
+
+// Base de datos
+const db = firebase.firestore();
+
+// Verificación
+console.log("Firebase conectado:", !!db);
 const partidos = [
   { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
   { id: 2, grupo: "A", local: "Brasil", visitante: "Argentina" },
