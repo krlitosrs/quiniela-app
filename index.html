@@ -3,43 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <title>Quiniela Mundial</title>
-  <link rel="stylesheet" href="style.css">
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      padding: 20px;
+    }
+
+    input {
+      margin: 5px;
+      padding: 5px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+
+    table {
+      margin-top: 10px;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 
+<div class="container">
+
   <h1>Quiniela Mundial</h1>
 
-  <div class="container">
+  <!-- LOGIN -->
+  <h2>Login</h2>
+  <input type="email" id="email" placeholder="Correo">
+  <input type="password" id="password" placeholder="Contraseña">
+  <br>
 
-    <!-- LOGIN -->
-    <h2>Login</h2>
-    <input type="email" id="email" placeholder="Correo">
-    <input type="password" id="password" placeholder="Contraseña">
-    <br><br>
-    <button onclick="registrar()">Registrarse</button>
-    <button onclick="login()">Iniciar Sesión</button>
-    <button onclick="logout()">Cerrar Sesión</button>
+  <button onclick="registrar()">Registrarse</button>
+  <button onclick="login()">Iniciar Sesión</button>
+  <button onclick="logout()">Cerrar Sesión</button>
 
-    <!-- USUARIO -->
-    <h2>Jugador</h2>
-    <input type="text" id="nickname" placeholder="Nickname (para ranking)">
-    <button onclick="guardarNickname()">Guardar Nickname</button>
+  <!-- NICKNAME -->
+  <h2>Jugador</h2>
+  <input type="text" id="nickname" placeholder="Nickname (solo letras y números)">
+  <button onclick="guardarNickname()">Guardar Nickname</button>
 
-    <!-- PARTIDOS -->
-    <h2>Fase de Grupos</h2>
-    <div id="partidos"></div>
+  <!-- PARTIDOS -->
+  <h2>Fase de Grupos</h2>
+  <div id="partidos"></div>
 
-    <button onclick="guardarPredicciones()">Guardar Predicciones</button>
-    <button onclick="guardarResultados()">Guardar Resultados (Admin)</button>
+  <button onclick="guardarPredicciones()">Guardar Predicciones</button>
+  <button onclick="guardarResultados()">Guardar Resultados (Admin)</button>
 
-  </div>
+  <!-- RANKING -->
+  <h2>Ranking</h2>
+  <div id="ranking"></div>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+</div>
 
-  <script src="script.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+
+<!-- TU SCRIPT -->
+<script src="script.js"></script>
 
 </body>
 </html>
