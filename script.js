@@ -1,4 +1,4 @@
-// CONFIG
+// 🔥 CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyCXwjx7-rkh7arUF2ma7rK_gE1luwSB6ic",
   authDomain: "quiniela-app-7cbb0.firebaseapp.com",
@@ -9,7 +9,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// PARTIDOS
+// ⏱️ CIERRE DE FASE (AJUSTA ESTA FECHA)
+const CIERRE_FASE = new Date("2026-06-01T18:00:00");
+
+// ⚽ PARTIDOS (orden cronológico)
 const partidos = [
   { id:1, local:"Brasil", visitante:"Alemania" },
   { id:2, local:"Brasil", visitante:"Argentina" },
@@ -19,7 +22,7 @@ const partidos = [
   { id:6, local:"Argentina", visitante:"Francia" }
 ];
 
-// PANTALLAS
+// 🧭 PANTALLAS
 function mostrarPantalla(id){
   ["pantallaLogin","pantallaNickname","pantallaApp"].forEach(p=>{
     document.getElementById(p).style.display = p===id ? "block" : "none";
@@ -36,7 +39,7 @@ function mostrarVista(v){
   if(v==="misResultados") document.getElementById("vistaMisResultados").style.display="block";
 }
 
-// AUTH
+// 🔐 AUTH
 function registrar(){
   auth.createUserWithEmailAndPassword(
     document.getElementById("email").value,
@@ -60,7 +63,7 @@ function login(){
 
 function logout(){ auth.signOut(); }
 
-// ACCESO
+// 🔒 ACCESO
 async function verificarAcceso(){
   const user = auth.currentUser;
   if(!user) return;
@@ -80,7 +83,7 @@ async function verificarAcceso(){
   }
 }
 
-// NICKNAME
+// 👤 NICKNAME
 function validarNickname(n){
   return /^[a-zA-Z0-9]{1,25}$/.test(n);
 }
@@ -111,33 +114,55 @@ async function guardarNickname(){
   }catch(e){ alert(e.message); }
 }
 
-// RENDER PARTIDOS
+// 🎨 RENDER PARTIDOS
 function render(){
   const c = document.getElementById("partidos");
   c.innerHTML="";
+
+  const bloqueado = new Date() >= CIERRE_FASE;
 
   partidos.forEach(p=>{
     c.innerHTML += `
       <div>
         ${p.local} vs ${p.visitante}
-        <input id="p_l_${p.id}" type="number" min="0">
+        <input id="p_l_${p.id}" type="number" min="0" ${bloqueado?"disabled":""}>
         -
-        <input id="p_v_${p.id}" type="number" min="0">
+        <input id="p_v_${p.id}" type="number" min="0" ${bloqueado?"disabled":""}>
       </div>
     `;
   });
+
+  if(bloqueado){
+    c.innerHTML += `<p style="color:red"><strong>Fase cerrada, no puedes editar</strong></p>`;
+  }
 }
 
-// GUARDAR PREDICCIONES
+// 💾 GUARDAR PREDICCIONES
 async function guardarPredicciones(){
   const user = auth.currentUser;
+
+  if(new Date() >= CIERRE_FASE){
+    return alert("La fase ya está cerrada");
+  }
+
   let datos = {};
 
-  partidos.forEach(p=>{
-    let l = parseInt(document.getElementById(`p_l_${p.id}`).value) || 0;
-    let v = parseInt(document.getElementById(`p_v_${p.id}`).value) || 0;
-    datos[p.id] = { l, v };
-  });
+  for(let p of partidos){
+    let l = document.getElementById(`p_l_${p.id}`).value;
+    let v = document.getElementById(`p_v_${p.id}`).value;
+
+    if(l==="" || v===""){
+      return alert("Debes llenar todos los partidos");
+    }
+
+    l=parseInt(l); v=parseInt(v);
+
+    if(l<0 || v<0 || l>30 || v>30){
+      return alert("Valores inválidos");
+    }
+
+    datos[p.id]={l,v};
+  }
 
   await db.collection("predicciones").doc(user.uid).set({
     uid:user.uid,
@@ -147,7 +172,7 @@ async function guardarPredicciones(){
   alert("Guardado");
 }
 
-// CALCULO
+// 🧠 CALCULO GENERAL
 function calcular(pred, real){
   let puntos=0, exactos=0, resultados=0;
 
@@ -171,7 +196,22 @@ function calcular(pred, real){
   return {puntos,exactos,resultados};
 }
 
-// RANKING
+// 🧠 CALCULO POR PARTIDO
+function calcularPuntosPartido(pr, re){
+  if(!pr || !re) return 0;
+
+  if(pr.l===re.l && pr.v===re.v) return 5;
+
+  if(
+    (pr.l>pr.v && re.l>re.v) ||
+    (pr.l<pr.v && re.l<re.v) ||
+    (pr.l===pr.v && re.l===re.v)
+  ) return 3;
+
+  return 0;
+}
+
+// 🏆 RANKING
 function escucharRanking(){
   let resultados=null, pred=[], users={};
 
@@ -211,7 +251,7 @@ function escucharRanking(){
   }
 }
 
-// RENDER RANKING
+// 🎨 RANKING
 function pintarRanking(lista){
   let html="<table><tr><th>#</th><th>Jugador</th><th>Puntos</th></tr>";
 
@@ -228,33 +268,58 @@ function pintarRanking(lista){
   document.getElementById("ranking").innerHTML=html;
 }
 
-// MIS RESULTADOS
+// 📊 MIS RESULTADOS (CON ACUMULADO)
 function pintarMisResultados(resultados){
   const user = auth.currentUser;
+
   db.collection("predicciones").doc(user.uid).get().then(doc=>{
     if(!doc.exists) return;
 
     const pred=doc.data().partidos;
+    let acumulado=0;
 
-    let html="<table><tr><th>Partido</th><th>Tú</th><th>Real</th></tr>";
+    let html=`
+      <table>
+        <tr>
+          <th>Partido</th>
+          <th>Tú</th>
+          <th>Real</th>
+          <th>Puntos</th>
+          <th>Acumulado</th>
+        </tr>
+    `;
 
     partidos.forEach(p=>{
       const pr=pred[p.id]||{};
       const re=resultados[p.id]||{};
 
-      html+=`<tr>
-        <td>${p.local} vs ${p.visitante}</td>
-        <td>${pr.l??"-"}-${pr.v??"-"}</td>
-        <td>${re.l??"-"}-${re.v??"-"}</td>
-      </tr>`;
+      const puntos=calcularPuntosPartido(pr,re);
+      acumulado+=puntos;
+
+      html+=`
+        <tr>
+          <td>${p.local} vs ${p.visitante}</td>
+          <td>${pr.l ?? "-"} - ${pr.v ?? "-"}</td>
+          <td>${re.l ?? "-"} - ${re.v ?? "-"}</td>
+          <td>${puntos}</td>
+          <td><strong>${acumulado}</strong></td>
+        </tr>
+      `;
     });
 
-    html+="</table>";
+    html+=`
+      <tr>
+        <td colspan="4"><strong>Total</strong></td>
+        <td><strong>${acumulado}</strong></td>
+      </tr>
+    </table>
+    `;
+
     document.getElementById("misResultados").innerHTML=html;
   });
 }
 
-// INIT
+// 🚀 INIT
 window.onload=()=>{
   render();
   escucharRanking();
