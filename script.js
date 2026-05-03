@@ -2,7 +2,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCXwjx7-rkh7arUF2ma7rK_gE1luwSB6ic",
   authDomain: "quiniela-app-7cbb0.firebaseapp.com",
-  projectId: "quiniela-app-7cbb0"
+  projectId: "quiniela-app-7cbb0",
 };
 
 firebase.initializeApp(firebaseConfig);
