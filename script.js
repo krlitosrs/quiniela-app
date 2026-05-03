@@ -1,16 +1,17 @@
 const partidos = [
+  // Grupo A (4 equipos → 6 partidos)
   { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
-  { id: 2, grupo: "A", local: "Argentina", visitante: "Francia" },
-
-  { id: 3, grupo: "B", local: "España", visitante: "Italia" },
-  { id: 4, grupo: "B", local: "Inglaterra", visitante: "Portugal" }
+  { id: 2, grupo: "A", local: "Brasil", visitante: "Argentina" },
+  { id: 3, grupo: "A", local: "Brasil", visitante: "Francia" },
+  { id: 4, grupo: "A", local: "Alemania", visitante: "Argentina" },
+  { id: 5, grupo: "A", local: "Alemania", visitante: "Francia" },
+  { id: 6, grupo: "A", local: "Argentina", visitante: "Francia" }
 ];
 
 function render() {
   const contenedor = document.getElementById("partidos");
   contenedor.innerHTML = "";
 
-  // obtener grupos únicos
   const grupos = [...new Set(partidos.map(p => p.grupo))];
 
   grupos.forEach(grupo => {
@@ -28,6 +29,8 @@ function render() {
           </div>
         `;
       });
+
+    contenedor.innerHTML += `<div id="tabla_${grupo}"></div>`;
   });
 }
 
@@ -66,29 +69,86 @@ function guardar() {
   });
 
   localStorage.setItem("quiniela", JSON.stringify(datos));
-  localStorage.setItem("usuario", nombre);
 
-  const puntos = calcular(datos, false);
+  calcularTablas(datos);
+}
 
-  let jugadores = JSON.parse(localStorage.getItem("jugadores")) || [];
+function calcularTablas(datos) {
+  const grupos = [...new Set(partidos.map(p => p.grupo))];
 
-  const idx = jugadores.findIndex(j => j.nombre === nombre);
+  grupos.forEach(grupo => {
+    let tabla = {};
 
-  const registro = {
-    nombre,
-    puntos,
-    fecha: new Date().toISOString()
+    const partidosGrupo = partidos.filter(p => p.grupo === grupo);
+
+    partidosGrupo.forEach(p => {
+      const { local, visitante } = p;
+
+      if (!tabla[local]) tabla[local] = crearEquipo();
+      if (!tabla[visitante]) tabla[visitante] = crearEquipo();
+
+      const resultado = datos[p.id];
+      if (!resultado) return;
+
+      const l = parseInt(resultado.l);
+      const v = parseInt(resultado.v);
+
+      tabla[local].gf += l;
+      tabla[local].gc += v;
+
+      tabla[visitante].gf += v;
+      tabla[visitante].gc += l;
+
+      if (l > v) {
+        tabla[local].pts += 3;
+      } else if (l < v) {
+        tabla[visitante].pts += 3;
+      } else {
+        tabla[local].pts += 1;
+        tabla[visitante].pts += 1;
+      }
+    });
+
+    let lista = Object.entries(tabla).map(([equipo, data]) => ({
+      equipo,
+      ...data,
+      dg: data.gf - data.gc
+    }));
+
+    lista.sort((a, b) =>
+      b.pts - a.pts || b.dg - a.dg || b.gf - a.gf
+    );
+
+    pintarTabla(grupo, lista);
+  });
+}
+
+function crearEquipo() {
+  return {
+    pts: 0,
+    gf: 0,
+    gc: 0
   };
+}
 
-  if (idx >= 0) {
-    jugadores[idx] = registro;
-  } else {
-    jugadores.push(registro);
-  }
+function pintarTabla(grupo, lista) {
+  const cont = document.getElementById(`tabla_${grupo}`);
 
-  localStorage.setItem("jugadores", JSON.stringify(jugadores));
+  let html = "<table border='1' style='width:100%; color:white'>";
+  html += "<tr><th>#</th><th>Equipo</th><th>Pts</th><th>DG</th></tr>";
 
-  mostrarRanking();
+  lista.forEach((e, i) => {
+    html += `<tr>
+      <td>${i + 1}</td>
+      <td>${e.equipo}</td>
+      <td>${e.pts}</td>
+      <td>${e.dg}</td>
+    </tr>`;
+  });
+
+  html += "</table>";
+
+  cont.innerHTML = html;
 }
 
 function cargar() {
@@ -105,77 +165,11 @@ function cargar() {
     }
   });
 
-  calcular(datos);
-}
-
-function calcular(datos, pintar = true) {
-  const reales = {
-    1: { l: 2, v: 1 },
-    2: { l: 1, v: 1 },
-    3: { l: 0, v: 0 },
-    4: { l: 3, v: 2 }
-  };
-
-  let puntos = 0;
-
-  partidos.forEach(p => {
-    const user = datos[p.id];
-    const real = reales[p.id];
-
-    if (!user) return;
-
-    const ul = parseInt(user.l);
-    const uv = parseInt(user.v);
-
-    if (ul === real.l && uv === real.v) {
-      puntos += 3;
-    } else if (
-      (ul > uv && real.l > real.v) ||
-      (ul < uv && real.l < real.v) ||
-      (ul === uv && real.l === real.v)
-    ) {
-      puntos += 1;
-    }
-  });
-
-  if (pintar) {
-    document.getElementById("resultado").innerText =
-      "Puntos obtenidos: " + puntos;
-  }
-
-  return puntos;
-}
-
-function mostrarRanking() {
-  const cont = document.getElementById("ranking");
-  let jugadores = JSON.parse(localStorage.getItem("jugadores")) || [];
-
-  jugadores.sort((a, b) => b.puntos - a.puntos);
-
-  if (jugadores.length === 0) {
-    cont.innerHTML = "<p>Sin datos aún</p>";
-    return;
-  }
-
-  let html = "<table border='1' style='width:100%; color:white'>";
-  html += "<tr><th>#</th><th>Nombre</th><th>Puntos</th></tr>";
-
-  jugadores.forEach((j, i) => {
-    html += `<tr>
-      <td>${i + 1}</td>
-      <td>${j.nombre}</td>
-      <td>${j.puntos}</td>
-    </tr>`;
-  });
-
-  html += "</table>";
-
-  cont.innerHTML = html;
+  calcularTablas(datos);
 }
 
 window.onload = () => {
   render();
   cargar();
   cargarNombre();
-  mostrarRanking();
 };
