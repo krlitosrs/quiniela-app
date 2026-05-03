@@ -1,21 +1,33 @@
 const partidos = [
-  { id: 1, local: "Brasil", visitante: "Alemania" },
-  { id: 2, local: "Argentina", visitante: "Francia" }
+  { id: 1, grupo: "A", local: "Brasil", visitante: "Alemania" },
+  { id: 2, grupo: "A", local: "Argentina", visitante: "Francia" },
+
+  { id: 3, grupo: "B", local: "España", visitante: "Italia" },
+  { id: 4, grupo: "B", local: "Inglaterra", visitante: "Portugal" }
 ];
 
 function render() {
   const contenedor = document.getElementById("partidos");
   contenedor.innerHTML = "";
 
-  partidos.forEach(p => {
-    contenedor.innerHTML += `
-      <div class="match">
-        <span>${p.local} vs ${p.visitante}</span>
-        <input type="number" id="l_${p.id}" placeholder="0" min="0" max="30">
--
-	<input type="number" id="v_${p.id}" placeholder="0" min="0" max="30">
-      </div>
-    `;
+  // obtener grupos únicos
+  const grupos = [...new Set(partidos.map(p => p.grupo))];
+
+  grupos.forEach(grupo => {
+    contenedor.innerHTML += `<h3>Grupo ${grupo}</h3>`;
+
+    partidos
+      .filter(p => p.grupo === grupo)
+      .forEach(p => {
+        contenedor.innerHTML += `
+          <div class="match">
+            <span>${p.local} vs ${p.visitante}</span>
+            <input type="number" id="l_${p.id}" min="0" max="30" placeholder="0">
+            -
+            <input type="number" id="v_${p.id}" min="0" max="30" placeholder="0">
+          </div>
+        `;
+      });
   });
 }
 
@@ -42,16 +54,15 @@ function guardar() {
 
   partidos.forEach(p => {
     let l = parseInt(document.getElementById(`l_${p.id}`).value);
-let v = parseInt(document.getElementById(`v_${p.id}`).value);
+    let v = parseInt(document.getElementById(`v_${p.id}`).value);
 
-// Validación
-if (isNaN(l) || l < 0) l = 0;
-if (isNaN(v) || v < 0) v = 0;
+    if (isNaN(l) || l < 0) l = 0;
+    if (isNaN(v) || v < 0) v = 0;
 
-if (l > 30) l = 30;
-if (v > 30) v = 30;
+    if (l > 30) l = 30;
+    if (v > 30) v = 30;
 
-datos[p.id] = { l, v };
+    datos[p.id] = { l, v };
   });
 
   localStorage.setItem("quiniela", JSON.stringify(datos));
@@ -100,7 +111,9 @@ function cargar() {
 function calcular(datos, pintar = true) {
   const reales = {
     1: { l: 2, v: 1 },
-    2: { l: 1, v: 1 }
+    2: { l: 1, v: 1 },
+    3: { l: 0, v: 0 },
+    4: { l: 3, v: 2 }
   };
 
   let puntos = 0;
