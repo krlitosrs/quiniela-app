@@ -1,109 +1,61 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Quiniela Mundial</title>
+<meta charset="UTF-8">
+<title>Quiniela Mundial</title>
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #0f0f0f;
-      color: white;
-      margin: 0;
-    }
+<style>
+body { font-family: Arial; background:#0f0f0f; color:white; margin:0; }
+h1 { text-align:center; margin:20px 0; }
 
-    h1 {
-      text-align: center;
-      margin: 20px 0;
-    }
+.pantalla {
+  display:none;
+  max-width:900px;
+  margin:20px auto;
+  padding:20px;
+  background:#1a1a1a;
+  border-radius:10px;
+}
 
-    .pantalla {
-      display: none;
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background: #1a1a1a;
-      border-radius: 10px;
-    }
+button { margin:5px; padding:8px; border:none; border-radius:6px; cursor:pointer; }
+.menu { text-align:center; margin-bottom:15px; }
 
-    input, button {
-      margin: 5px;
-      padding: 8px;
-      border-radius: 6px;
-      border: none;
-    }
-
-    button {
-      background: #e50914;
-      color: white;
-      cursor: pointer;
-    }
-
-    .menu {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .menu button {
-      background: #333;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    td, th {
-      padding: 8px;
-      border-bottom: 1px solid #333;
-      text-align: center;
-    }
-  </style>
+table { width:100%; border-collapse: collapse; }
+td, th { padding:8px; border-bottom:1px solid #333; text-align:center; }
+</style>
 </head>
+
 <body>
 
 <h1>Quiniela Mundial</h1>
 
-<!-- LOGIN -->
 <div id="pantallaLogin" class="pantalla">
-  <h2>Login</h2>
   <input id="email" placeholder="Correo">
   <input id="password" type="password" placeholder="Contraseña"><br>
   <button onclick="registrar()">Registrarse</button>
   <button onclick="login()">Entrar</button>
 </div>
 
-<!-- NICKNAME -->
 <div id="pantallaNickname" class="pantalla">
-  <h2>Crear Nickname</h2>
-  <input id="nickname" placeholder="Nickname">
+  <input id="nickname">
   <button onclick="guardarNickname()">Guardar</button>
 </div>
 
-<!-- APP -->
 <div id="pantallaApp" class="pantalla">
 
   <div class="menu">
     <button onclick="mostrarVista('predicciones')">Predicciones</button>
-    <button onclick="mostrarVista('ranking')">Ranking</button>
-    <button onclick="mostrarVista('misResultados')">Mis Resultados</button>
+    <button onclick="mostrarVista('grupos')">Grupos</button>
     <button onclick="logout()">Salir</button>
   </div>
 
   <div id="vistaPredicciones">
-    <h2>Predicciones</h2>
     <div id="partidos"></div>
     <button onclick="guardarPredicciones()">Guardar</button>
   </div>
 
-  <div id="vistaRanking" style="display:none">
-    <h2>Ranking</h2>
-    <div id="ranking"></div>
-  </div>
-
-  <div id="vistaMisResultados" style="display:none">
-    <h2>Mis Resultados</h2>
-    <div id="misResultados"></div>
+  <div id="vistaGrupos" style="display:none">
+    <div id="tablaGrupos"></div>
   </div>
 
 </div>
